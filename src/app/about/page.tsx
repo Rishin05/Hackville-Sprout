@@ -39,8 +39,26 @@ const AboutMe = () => {
   const router = useRouter();
 
   const allSkills = [
-    "ReactJS", "NodeJS", "JavaScript", "Python", "Java",
-    "Cooking", "Photography", "Public Speaking", "Graphic Design", "Machine Learning"
+    // Academic skills
+    "Academic Writing", "Research Methods", "Time Management", "Microsoft Excel", 
+    "Python Programming", "Presentation Skills", "Note-Taking", "Data Analysis", 
+    "Project Management", "Study Techniques",
+
+    // Creative skills
+    "Digital Drawing", "Photography", "Guitar Playing", "Dance (Hip-hop)", 
+    "Watercolor Painting", "Basketball Skills", "Yoga Practice", "Skateboarding", 
+    "Calligraphy", "Vocal Training",
+
+    // Life skills
+    "Meal Prep", "Personal Finance", "Room Organization", "Mental Wellness", 
+    "Basic Car Maintenance", "Sustainable Living", "Public Speaking", 
+    "Interview Skills", "Basic First Aid", "Time Management",
+
+    // Language skills
+    "Conversational English", "Business Japanese", "Academic Writing (Chinese)", 
+    "Korean for Beginners", "Spanish Pronunciation", "French Culture & Language", 
+    "German Grammar", "Italian Cooking Terms", "Travel Japanese", 
+    "English Presentation Skills"
   ];
 
   const fetchUserData = () => {
@@ -126,7 +144,7 @@ const AboutMe = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center mb-6">
           <button onClick={() => router.back()} className="flex items-center text-gray-600 hover:text-gray-800">
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -148,8 +166,8 @@ const AboutMe = () => {
                   </div>
                 </div>
                 <div className="text-center mb-6">
-  <h2 className="text-2xl font-semibold">{userData.name}</h2> {/* Display name below PFP */}
-</div>
+                  <h2 className="text-2xl font-semibold">{userData.name}</h2> {/* Display name below PFP */}
+                </div>
                 <div className="space-y-4">
                   <input
                     type="email"
@@ -176,7 +194,7 @@ const AboutMe = () => {
                   />
                   <input
                     type="text"
-                    name="Age"
+                    name="age"
                     value={formData.age}
                     onChange={handleInputChange}
                     placeholder="Age"
@@ -207,15 +225,15 @@ const AboutMe = () => {
                   name="bio"
                   onChange={handleInputChange}
                   placeholder="Write something about yourself..."
-                  className="w-full bg-transparent resize-none focus:outline-none min-h-[120px] mb-6"
+                  className="w-full bg-[#FAFAFA] resize-none focus:outline-none min-h-[120px] mb-6 rounded "
                 />
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Skills I Can Teach</h3>
                     <div className="flex flex-wrap gap-2">
-                      {allSkills.map((skill) => (
+                      {allSkills.map((skill, index) => (
                         <button
-                          key={`teach-${skill}`}
+                          key={`${skill}-${index}`} // Ensure unique keys
                           onClick={() => toggleSkill({ skill, type: "teach" })}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
                             ${skillsToTeach.includes(skill) ? "bg-green-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
@@ -229,9 +247,9 @@ const AboutMe = () => {
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Skills I Want to Learn</h3>
                     <div className="flex flex-wrap gap-2">
-                      {allSkills.map((skill) => (
+                      {allSkills.map((skill, index) => (
                         <button
-                          key={`learn-${skill}`}
+                          key={`${skill}-${index}`} // Ensure unique keys
                           onClick={() => toggleSkill({ skill, type: "learn" })}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
                             ${skillsToLearn.includes(skill) ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}

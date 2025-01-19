@@ -1,27 +1,66 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { auth, database } from '../../lib/firebase';
-import { ref as dbRef, update } from 'firebase/database';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { auth, database } from "../../lib/firebase";
+import { ref as dbRef, update } from "firebase/database";
+import { useRouter } from "next/navigation";
+
+const categories: { [key: string]: string[] } = {
+  "Work & Study": [
+    "Academic Writing",
+    "Research Methods",
+    "Time Management",
+    "Microsoft Excel",
+    "Python Programming",
+    "Presentation Skills",
+    "Note-Taking",
+    "Data Analysis",
+    "Project Management",
+    "Study Techniques",
+  ],
+  "Sports & Art": [
+    "Digital Drawing",
+    "Photography",
+    "Guitar Playing",
+    "Dance (Hip-hop)",
+    "Watercolor Painting",
+    "Basketball Skills",
+    "Yoga Practice",
+    "Skateboarding",
+    "Calligraphy",
+    "Vocal Training",
+  ],
+  "Life Skills": [
+    "Meal Prep",
+    "Personal Finance",
+    "Room Organization",
+    "Mental Wellness",
+    "Basic Car Maintenance",
+    "Sustainable Living",
+    "Public Speaking",
+    "Interview Skills",
+    "Basic First Aid",
+    "Time Management",
+  ],
+  "Language": [
+    "Conversational English",
+    "Business Japanese",
+    "Academic Writing (Chinese)",
+    "Korean for Beginners",
+    "Spanish Pronunciation",
+    "French Culture & Language",
+    "German Grammar",
+    "Italian Cooking Terms",
+    "Travel Japanese",
+    "English Presentation Skills",
+  ],
+};
 
 const SkillSelection = () => {
+  const [selectedCategory, setSelectedCategory] = useState<keyof typeof categories | null>(null);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [apples, setApples] = useState<{ skill: string; x: number; y: number }[]>([]);
   const router = useRouter();
-
-  const availableSkills = [
-    'ReactJS',
-    'NodeJS',
-    'JavaScript',
-    'Python',
-    'Java',
-    'Cooking',
-    'Photography',
-    'Public Speaking',
-    'Graphic Design',
-    'Machine Learning',
-  ];
 
   const handleSkillChange = (skill: string) => {
     setSelectedSkills((prevSkills) =>
@@ -32,9 +71,9 @@ const SkillSelection = () => {
 
     const existingApple = apples.find((apple) => apple.skill === skill);
     
-    if (!apples.some((apple) => apple.skill === skill)) {
-      const randomX = Math.random() * 60 + 20; // Random x position (15% to 85% of width)
-      const randomY = Math.random() * 30 + 10; // Random y position (10% to 60% of height)
+    if (!existingApple) {
+      const randomX = Math.random() * 60 + 20; // Random x position (20% to 80% of width)
+      const randomY = Math.random() * 30 + 10; // Random y position (10% to 40% of height)
 
       setApples((prev) => [
         ...prev,
@@ -55,8 +94,7 @@ const SkillSelection = () => {
         updatedAt: Date.now(),
       });
 
-      // Move to the next page
-      router.push('/learn'); // Update '/next-page' with your actual next page URL
+      router.push('/learn'); // Update '/learn' with your actual next page URL
     }
   };
 
@@ -72,7 +110,6 @@ const SkillSelection = () => {
     <div className="min-h-[80vh] bg-gray-100 flex flex-col items-center p-6">
       {/* Main Container */}
       <div className="bg-white rounded-lg shadow-lg p-8 mt-6 w-full max-w-6xl flex flex-col relative">
-
         {/* Progress Bar */}
         <div className="w-full h-2 bg-gray-300 rounded-md mb-6 overflow-hidden">
           <div
@@ -116,20 +153,38 @@ const SkillSelection = () => {
             ))}
           </div>
 
-          {/* Right side: Skill selection */}
+          {/* Right side: Category and Skill selection */}
           <div className="w-1/2 p-8">
+            {/* Category Dropdown */}
+            <div className="mb-6">
+              <select
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-md w-full"
+                defaultValue=""
+              >
+                <option value="" disabled>Select a Category</option>
+                {Object.keys(categories).map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Skill Buttons */}
             <div className="grid grid-cols-2 gap-4">
-              {availableSkills.map((skill) => (
-                <div key={skill} className="flex items-center mb-4">
-                  <button
-                    type="button"
-                    onClick={() => handleSkillChange(skill)}
-                    className={`px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-[#DBEC62] hover:text-black transition-all duration-300 ${selectedSkills.includes(skill) ? 'bg-[#DBEC62] text-black' : ''}`}
-                  >
-                    {skill}
-                  </button>
-                </div>
-              ))}
+              {selectedCategory &&
+                categories[selectedCategory].map((skill) => (
+                  <div key={skill} className="flex items-center mb-4">
+                    <button
+                      type="button"
+                      onClick={() => handleSkillChange(skill)}
+                      className={`px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-[#DBEC62] hover:text-black transition-all duration-300 ${selectedSkills.includes(skill) ? 'bg-[#DBEC62] text-black' : ''}`}
+                    >
+                      {skill}
+                    </button>
+                  </div>
+                ))}
             </div>
           </div>
         </div>

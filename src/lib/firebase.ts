@@ -4,14 +4,15 @@ import { getDatabase, ref as dbRef, set, get, push, onValue, off } from 'firebas
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+// Use environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyAxmhWeGecS816SvrohLyUr4bjEOI4rvU0",
-  authDomain: "sprout-44502.firebaseapp.com",
-  databaseURL: "https://sprout-44502-default-rtdb.firebaseio.com",
-  projectId: "sprout-44502",
-  storageBucket: "sprout-44502.firebasestorage.app",
-  messagingSenderId: "803164210419",
-  appId: "1:803164210419:web:dbeccf6c9fa3f504842386"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { auth, database } from '../../lib/firebase';
-import { ref as dbRef, get, set, update } from 'firebase/database';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { auth, database } from "../../lib/firebase";
+import { ref as dbRef, get, update } from "firebase/database";
+import { useRouter } from "next/navigation";
 
 const LearnSkills = () => {
   const [skillsToLearn, setSkillsToLearn] = useState<string[]>([]);
@@ -28,36 +28,36 @@ const LearnSkills = () => {
     }
   };
 
-  const fetchSkills = async () => {
+  const fetchAvailableSkills = async () => {
     try {
-      const usersRef = dbRef(database, 'users');
+      const usersRef = dbRef(database, "users");
       const usersSnapshot = await get(usersRef);
-      const skills = new Set<string>();
+      const skillsOffered = new Set<string>();
 
       if (usersSnapshot.exists()) {
         usersSnapshot.forEach((userSnapshot) => {
           const userData = userSnapshot.val();
-          const userSkills = userData.skills || [];
-          userSkills.forEach((skill: string) => skills.add(skill));
+          const userSkillsToTeach = userData.skills || [];
+          userSkillsToTeach.forEach((skill: string) => skillsOffered.add(skill));
         });
       }
 
-      const skillsArray = Array.from(skills).filter((skill) => !skillsIAlreadyKnow.includes(skill));
-      setAvailableSkills(skillsArray);
+      const filteredSkills = Array.from(skillsOffered).filter(
+        (skill) => !skillsIAlreadyKnow.includes(skill)
+      );
+
+      setAvailableSkills(filteredSkills);
     } catch (error) {
-      console.error("Error fetching skills:", error);
+      console.error("Error fetching available skills:", error);
     }
   };
 
   const handleSkillChange = (skill: string) => {
-    setSelectedSkills((prevSkills) => {
-      const updatedSkills = prevSkills.includes(skill)
+    setSelectedSkills((prevSkills) =>
+      prevSkills.includes(skill)
         ? prevSkills.filter((s) => s !== skill)
-        : [...prevSkills, skill];
-
-      // Update the progress based on the number of selected skills
-      return updatedSkills;
-    });
+        : [...prevSkills, skill]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,10 +67,10 @@ const LearnSkills = () => {
       const userRef = dbRef(database, `users/${auth.currentUser.uid}`);
       await update(userRef, {
         skillsToLearn: selectedSkills,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
       });
 
-      router.push('/main-page');
+      router.push("/main-page"); // Replace with the actual path of your main page
     }
   };
 
@@ -80,13 +80,12 @@ const LearnSkills = () => {
 
   useEffect(() => {
     if (skillsIAlreadyKnow.length > 0) {
-      fetchSkills();
+      fetchAvailableSkills();
     }
   }, [skillsIAlreadyKnow]);
 
   // Calculate the progress dynamically based on the number of selected skills
   let progressPercentage = 66; // Starting value
-
   if (selectedSkills.length === 1) {
     progressPercentage = 83; // After selecting the first skill
   } else if (selectedSkills.length >= 2) {
@@ -97,14 +96,13 @@ const LearnSkills = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
       {/* Main Container */}
       <div className="bg-white rounded-lg shadow-lg p-8 mt-6 w-full max-w-6xl flex flex-col relative">
-        
         {/* Progress Bar */}
         <div className="w-full h-2 bg-gray-300 rounded-md mb-6 overflow-hidden">
           <div
             className="h-2 rounded-md transition-all duration-300"
             style={{
               width: `${progressPercentage}%`,
-              backgroundColor: '#F2B13E',
+              backgroundColor: "#F2B13E",
             }}
           ></div>
         </div>
@@ -134,7 +132,7 @@ const LearnSkills = () => {
                     <button
                       type="button"
                       onClick={() => handleSkillChange(skill)}
-                      className={`px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-[#DBEC62] hover:text-black transition-all duration-300 ${selectedSkills.includes(skill) ? 'bg-[#DBEC62] text-black' : ''}`}
+                      className={`px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-[#DBEC62] hover:text-black transition-all duration-300 ${selectedSkills.includes(skill) ? "bg-[#DBEC62] text-black" : ""}`}
                     >
                       {skill}
                     </button>
