@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { auth, database } from '../../lib/firebase';
-import { ref as dbRef, get, set, update } from 'firebase/database';  // Corrected import
+import { ref as dbRef, get, set, update } from 'firebase/database';
 import { useRouter } from 'next/navigation';
 
 const LearnSkills = () => {
@@ -50,11 +50,14 @@ const LearnSkills = () => {
   };
 
   const handleSkillChange = (skill: string) => {
-    setSelectedSkills((prevSkills) =>
-      prevSkills.includes(skill)
+    setSelectedSkills((prevSkills) => {
+      const updatedSkills = prevSkills.includes(skill)
         ? prevSkills.filter((s) => s !== skill)
-        : [...prevSkills, skill]
-    );
+        : [...prevSkills, skill];
+
+      // Update the progress based on the number of selected skills
+      return updatedSkills;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,32 +84,75 @@ const LearnSkills = () => {
     }
   }, [skillsIAlreadyKnow]);
 
+  // Calculate the progress dynamically based on the number of selected skills
+  let progressPercentage = 66; // Starting value
+
+  if (selectedSkills.length === 1) {
+    progressPercentage = 83; // After selecting the first skill
+  } else if (selectedSkills.length >= 2) {
+    progressPercentage = 100; // After selecting two or more skills
+  }
+
   return (
-    <div>
-      <h1>Select Skills You Want to Learn</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          {availableSkills.length === 0 ? (
-            <p>No skills available. Make sure users have selected skills to teach.</p>
-          ) : (
-            availableSkills.map((skill) => (
-              <div key={skill}>
-                <input
-                  type="checkbox"
-                  id={skill}
-                  value={skill}
-                  checked={selectedSkills.includes(skill)}
-                  onChange={() => handleSkillChange(skill)}
-                />
-                <label htmlFor={skill}>{skill}</label>
-              </div>
-            ))
-          )}
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
+      {/* Main Container */}
+      <div className="bg-white rounded-lg shadow-lg p-8 mt-6 w-full max-w-6xl flex flex-col relative">
+        
+        {/* Progress Bar */}
+        <div className="w-full h-2 bg-gray-300 rounded-md mb-6 overflow-hidden">
+          <div
+            className="h-2 rounded-md transition-all duration-300"
+            style={{
+              width: `${progressPercentage}%`,
+              backgroundColor: '#F2B13E',
+            }}
+          ></div>
         </div>
-        <button type="submit" disabled={selectedSkills.length === 0}>
+
+        {/* Heading */}
+        <h2 className="text-2xl font-bold text-center mb-8">What Are You Looking For?</h2>
+
+        {/* Main content */}
+        <div className="flex mb-8">
+          {/* Left side: Tree GIF */}
+          <div className="w-1/2 flex justify-center items-center relative">
+            <img
+              className="w-full max-w-md"
+              src="./tree.gif" // Replace with your actual tree GIF path
+              alt="Tree"
+            />
+          </div>
+
+          {/* Right side: Skill selection */}
+          <div className="w-1/2 p-8">
+            <div className="grid grid-cols-2 gap-4">
+              {availableSkills.length === 0 ? (
+                <p>No skills available. Make sure users have selected skills to teach.</p>
+              ) : (
+                availableSkills.map((skill) => (
+                  <div key={skill} className="flex items-center mb-4">
+                    <button
+                      type="button"
+                      onClick={() => handleSkillChange(skill)}
+                      className={`px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-[#DBEC62] hover:text-black transition-all duration-300 ${selectedSkills.includes(skill) ? 'bg-[#DBEC62] text-black' : ''}`}
+                    >
+                      {skill}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          onClick={handleSubmit}
+          className="bg-[#DBEC62] text-black font-bold py-3 px-6 rounded-lg hover:bg-[#F2B13E] self-end"
+        >
           Submit
         </button>
-      </form>
+      </div>
     </div>
   );
 };

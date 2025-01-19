@@ -55,7 +55,7 @@ const Home = () => {
 
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      router.push("/main-page"); 
+      router.push("/basic-info"); // Redirect to the basic-info page after sign up
     } catch (error) {
       console.error("Error signing up with email:", error);
       setErrorMessage("Failed to sign up. Please try again.");
