@@ -1,24 +1,24 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { auth, googleAuthProvider, emailAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from '../lib/firebase'; // Correct imports
+import { auth, googleAuthProvider, emailAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from '../lib/firebase'; 
 import { User } from 'firebase/auth';
-import { useRouter } from 'next/navigation'; // Import useRouter
-import { doc, getDoc } from 'firebase/firestore';
-import { firestore } from '../lib/firebase'; // Correct import for firestore
+import { useRouter } from 'next/navigation'; 
+import { ref as dbRef, onValue, off } from 'firebase/database'; // Import Realtime Database methods
+import { database } from '../lib/firebase'; // Import your Realtime Database instance
 
 const Home = () => {
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
       if (user) {
-        checkUserProfile(user);
+        checkUserProfile(user); // Check user profile after login
       }
     });
 
@@ -26,28 +26,32 @@ const Home = () => {
   }, [router]);
 
   const checkUserProfile = async (user: User) => {
-    const userRef = doc(firestore, 'users', user.uid);
-    const userDoc = await getDoc(userRef);
+    const userRef = dbRef(database, `users/${user.uid}`); // Use Realtime Database ref
+    onValue(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
 
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      // Check if user has filled out all the required fields
-      if (
-        userData?.name &&
-        userData?.gender &&
-        userData?.skills &&
-        userData?.skillsToLearn
-      ) {
-        // If profile is complete, redirect to main-page
-        router.push('/main-page');
+        // Check if user has filled out all the required fields
+        if (
+          userData?.name &&
+          userData?.gender &&
+          userData?.skills &&
+          userData?.skillsToLearn
+        ) {
+          // If profile is complete, redirect to main-page
+          router.push('/main-page');
+        } else {
+          // If profile is incomplete, redirect to basic-info page
+          router.push('/basic-info');
+        }
       } else {
-        // If profile is incomplete, redirect to basic-info page
+        // If no user data found, redirect to basic-info page
         router.push('/basic-info');
       }
-    } else {
-      // If no user data found, redirect to basic-info page
-      router.push('/basic-info');
-    }
+    });
+
+    // Cleanup subscription
+    return () => off(userRef);
   };
 
   const handleSignInWithGoogle = async () => {

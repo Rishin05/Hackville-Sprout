@@ -1,38 +1,67 @@
 "use client";
 
-import { useState } from 'react';
-import { auth, firestore } from '../../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth';
+import { useState } from "react";
+import { auth, database, storage } from "../../lib/firebase";
+import { ref as dbRef, set } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
 
 const BasicInfo = () => {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [program, setProgram] = useState('');
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [program, setProgram] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (auth.currentUser) {
-      const userRef = doc(firestore, 'users', auth.currentUser.uid);
-      await setDoc(userRef, {
-        name,
-        age,
-        gender,
-        program,
-      }, { merge: true });
-
-      // Redirect to skill selection page after submitting basic info
-      router.push('/skills'); // Redirect to the skills page
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePicture(file);
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploading(true);
+
+    if (auth.currentUser) {
+      try {
+        let profilePictureURL = "";
+
+        // If the user selected a profile picture, upload it
+        if (profilePicture) {
+          const storagePath = `profile_pictures/${auth.currentUser.uid}`;
+          const fileRef = storageRef(storage, storagePath);
+          await uploadBytes(fileRef, profilePicture);
+          profilePictureURL = await getDownloadURL(fileRef);
+        }
+
+        // Save user data to Realtime Database
+        const userRef = dbRef(database, `users/${auth.currentUser.uid}`);
+        await set(userRef, {
+          name,
+          age,
+          gender,
+          program,
+          profilePicture: profilePictureURL,
+          createdAt: Date.now()
+        });
+
+        router.push("/skills");
+      } catch (error) {
+        console.error("Error uploading profile picture or saving user data:", error);
+      }
+    }
+
+    setUploading(false);
+  };
+
   const handleLogout = async () => {
-    await signOut(auth); // Firebase sign out
-    router.push('/'); // Redirect to the sign-in page (home)
+    await signOut(auth);
+    router.push("/");
   };
 
   return (
@@ -75,7 +104,17 @@ const BasicInfo = () => {
             required
           />
         </div>
-        <button type="submit">Submit</button>
+        <div>
+          <label>Profile Picture:</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+        </div>
+        <button type="submit" disabled={uploading}>
+          {uploading ? "Uploading..." : "Submit"}
+        </button>
       </form>
       <button onClick={handleLogout}>Log Out</button>
     </div>

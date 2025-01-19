@@ -1,67 +1,82 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { firestore, auth } from '../../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { database, auth } from "../../lib/firebase";
+import { ref, get, set, onValue, off } from "firebase/database";
+import { useRouter } from "next/navigation";
 
 const AboutMe = () => {
-  const [userData, setUserData] = useState<any>(null); // Store user data
+  const [userData, setUserData] = useState<any>(null);
   const [skillsToTeach, setSkillsToTeach] = useState<string[]>([]);
   const [skillsToLearn, setSkillsToLearn] = useState<string[]>([]);
-  const [allSkills, setAllSkills] = useState<string[]>([]); // Predefined list of skills
+  const [allSkills, setAllSkills] = useState<string[]>([]);
   const router = useRouter();
 
-  // Fetch current user's data
-  const fetchUserData = async () => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
+  // Fetch current user's data from Realtime Database
+  const fetchUserData = () => {
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = ref(database, `users/${user.uid}`);
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
           setUserData(data);
-          setSkillsToTeach(data.skills || []);
+          setSkillsToTeach(data.skillsToTeach || []);
           setSkillsToLearn(data.skillsToLearn || []);
         }
-      } else {
-        router.push('/'); // Redirect to login if not authenticated
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
+      });
+    } else {
+      router.push("/"); // Redirect to login if not authenticated
     }
   };
 
-  // Fetch predefined skills list (mock or from a database)
+  // Fetch predefined skills list
   const fetchAllSkills = () => {
-    setAllSkills(['JavaScript', 'Python', 'React', 'Design', 'Marketing', 'Writing', 'Leadership']);
+    setAllSkills([
+      "ReactJS",
+      "NodeJS",
+      "JavaScript",
+      "Python",
+      "Java",
+      "Cooking",
+      "Photography",
+      "Public Speaking",
+      "Graphic Design",
+      "Machine Learning",
+    ]);
   };
 
-  // Handle skill updates
-  const updateSkills = async () => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        const userRef = doc(firestore, 'users', user.uid);
-        await setDoc(
-          userRef,
-          {
-            skills: skillsToTeach,
-            skillsToLearn: skillsToLearn,
-          },
-          { merge: true }
-        );
-        alert('Skills updated successfully!');
-        router.push('/main-page'); // Redirect to the main page after updating
-      }
-    } catch (error) {
-      console.error('Error updating skills:', error);
+  // Update skills to Realtime Database
+  const updateSkills = () => {
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = ref(database, `users/${user.uid}`);
+      set(userRef, {
+        ...userData,
+        skillsToTeach,
+        skillsToLearn,
+      })
+        .then(() => {
+          alert("Skills updated successfully!");
+          router.push("/main-page"); // Redirect after update
+        })
+        .catch((error) => {
+          console.error("Error updating skills:", error);
+        });
     }
   };
 
   useEffect(() => {
     fetchUserData();
     fetchAllSkills();
+
+    // Cleanup when the component unmounts
+    return () => {
+      if (auth.currentUser) {
+        const userRef = ref(database, `users/${auth.currentUser.uid}`);
+        off(userRef); // Unsubscribe from real-time listener
+      }
+    };
   }, []);
 
   return (
@@ -69,10 +84,23 @@ const AboutMe = () => {
       <h1>About Me</h1>
       {userData ? (
         <div style={styles.container}>
-          <h2>{userData.name}</h2>
-          <p><strong>Program:</strong> {userData.program}</p>
+          <div style={styles.profilePictureContainer}>
+            {userData.profilePicture ? (
+              <img
+                src={userData.profilePicture}
+                alt="Profile Picture"
+                style={styles.profilePicture as React.CSSProperties}
+              />
+            ) : (
+              <div style={styles.defaultProfilePicture}></div>
+            )}
+          </div>
 
-          {/* Skills to Teach */}
+          <h2>{userData.name}</h2>
+          <p>
+            <strong>Program:</strong> {userData.program}
+          </p>
+
           <div>
             <h3>Skills I Can Teach</h3>
             <div style={styles.skillList}>
@@ -95,7 +123,6 @@ const AboutMe = () => {
             </div>
           </div>
 
-          {/* Skills to Learn */}
           <div>
             <h3>Skills I Want to Learn</h3>
             <div style={styles.skillList}>
@@ -131,27 +158,45 @@ const AboutMe = () => {
 
 const styles = {
   container: {
-    padding: '20px',
-    maxWidth: '600px',
-    margin: 'auto',
+    padding: "20px",
+    maxWidth: "600px",
+    margin: "auto",
+  },
+  profilePictureContainer: {
+    width: "100px",
+    height: "100px",
+    borderRadius: "50%",
+    overflow: "hidden",
+    marginBottom: "20px",
+    backgroundColor: "#ccc",
+  },
+  profilePicture: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover" as "cover",
+  },
+  defaultProfilePicture: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#000",
   },
   skillList: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-    gap: '10px',
-    marginBottom: '20px',
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+    gap: "10px",
+    marginBottom: "20px",
   },
   skillItem: {
-    display: 'flex',
-    alignItems: 'center',
+    display: "flex",
+    alignItems: "center",
   },
   saveButton: {
-    padding: '10px 20px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+    padding: "10px 20px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
   },
 };
 

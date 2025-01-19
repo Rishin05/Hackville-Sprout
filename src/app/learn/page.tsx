@@ -1,36 +1,54 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
-import { auth, firestore } from '../../lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { auth, database } from '../../lib/firebase';
+import { ref as dbRef, get, set, update } from 'firebase/database';  // Corrected import
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
 
 const LearnSkills = () => {
   const [skillsToLearn, setSkillsToLearn] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+  const [skillsIAlreadyKnow, setSkillsIAlreadyKnow] = useState<string[]>([]);
   const router = useRouter();
 
-  // Fetch skills that other users have selected
+  const fetchUserSkills = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = dbRef(database, `users/${user.uid}`);
+        const userSnapshot = await get(userRef);
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.val();
+          setSkillsIAlreadyKnow(userData.skills || []);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user skills:", error);
+    }
+  };
+
   const fetchSkills = async () => {
     try {
-      const querySnapshot = await getDocs(collection(firestore, 'users'));
+      const usersRef = dbRef(database, 'users');
+      const usersSnapshot = await get(usersRef);
       const skills = new Set<string>();
 
-      // Loop through all users and gather all the skills
-      querySnapshot.forEach((doc) => {
-        const userSkills = doc.data().skills || [];
-        userSkills.forEach((skill: string) => skills.add(skill));
-      });
+      if (usersSnapshot.exists()) {
+        usersSnapshot.forEach((userSnapshot) => {
+          const userData = userSnapshot.val();
+          const userSkills = userData.skills || [];
+          userSkills.forEach((skill: string) => skills.add(skill));
+        });
+      }
 
-      setAvailableSkills(Array.from(skills)); // Convert Set to Array
+      const skillsArray = Array.from(skills).filter((skill) => !skillsIAlreadyKnow.includes(skill));
+      setAvailableSkills(skillsArray);
     } catch (error) {
       console.error("Error fetching skills:", error);
     }
   };
 
-  // Handle skill selection
   const handleSkillChange = (skill: string) => {
     setSelectedSkills((prevSkills) =>
       prevSkills.includes(skill)
@@ -39,26 +57,29 @@ const LearnSkills = () => {
     );
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (auth.currentUser) {
-      const userRef = doc(firestore, 'users', auth.currentUser.uid);
-      await setDoc(
-        userRef,
-        { skillsToLearn: selectedSkills },
-        { merge: true }
-      );
+      const userRef = dbRef(database, `users/${auth.currentUser.uid}`);
+      await update(userRef, {
+        skillsToLearn: selectedSkills,
+        updatedAt: Date.now()
+      });
 
-      // Redirect to another page after submitting skills
-      router.push('/main-page'); // Redirect to dashboard or another page
+      router.push('/main-page');
     }
   };
 
   useEffect(() => {
-    fetchSkills(); // Fetch the available skills when the page loads
+    fetchUserSkills();
   }, []);
+
+  useEffect(() => {
+    if (skillsIAlreadyKnow.length > 0) {
+      fetchSkills();
+    }
+  }, [skillsIAlreadyKnow]);
 
   return (
     <div>
@@ -76,7 +97,6 @@ const LearnSkills = () => {
                   value={skill}
                   checked={selectedSkills.includes(skill)}
                   onChange={() => handleSkillChange(skill)}
-                  disabled={selectedSkills.length >= 3 && !selectedSkills.includes(skill)} // Limit to 3 skills
                 />
                 <label htmlFor={skill}>{skill}</label>
               </div>
