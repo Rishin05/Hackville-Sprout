@@ -86,7 +86,6 @@ const BasicInfo = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
-      <Navbar />
 
       {/* Main Container */}
       <div className="bg-white rounded-lg shadow-lg p-8 mt-6 w-full max-w-4xl">
