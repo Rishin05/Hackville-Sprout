@@ -1,165 +1,111 @@
-"use client";
-
-import { useState, useEffect } from 'react';
-import { auth, createChat, sendMessage, subscribeToChat, unsubscribeFromChat } from '../../lib/firebase';
-
-interface Message {
-  id: string;
-  senderId: string;
-  message: string;
-  timestamp: number;
-}
+import { useEffect, useState } from "react";
+import { database } from "../../lib/firebase";
+import { ref as dbRef, onValue, set } from "firebase/database";
+import { auth } from "../../lib/firebase"; // Assuming auth is imported from firebase
 
 interface ChatProps {
   otherUserId: string;
   otherUserName: string;
+  setShowChat: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Chat = ({ otherUserId, otherUserName }: ChatProps) => {
+interface Message {
+  id: string;
+  text: string;
+  senderId: string;
+  timestamp: number;
+}
+
+const Chat: React.FC<ChatProps> = ({ otherUserId, otherUserName, setShowChat }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [chatId, setChatId] = useState<string | null>(null);
+  const [messageInput, setMessageInput] = useState<string>("");
+
+  const [userId] = useState(auth.currentUser?.uid);
 
   useEffect(() => {
-    const initializeChat = async () => {
-      if (auth.currentUser && otherUserId) {
-        const chatRoomId = await createChat(auth.currentUser.uid, otherUserId);
-        setChatId(chatRoomId);
-        
-        // Subscribe to messages
-        subscribeToChat(chatRoomId, (newMessages) => {
-          setMessages(newMessages.sort((a, b) => a.timestamp - b.timestamp));
-        });
-      }
+    if (!userId) return;
+
+    // Listen to messages between current user and the other user
+    const messagesRef = dbRef(database, `chats/${userId}/${otherUserId}`);
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+      const messagesData: Message[] = [];
+      snapshot.forEach((childSnapshot) => {
+        messagesData.push(childSnapshot.val());
+      });
+      setMessages(messagesData);
+    });
+
+    // Cleanup the listener when the component unmounts
+    return () => unsubscribe();
+  }, [userId, otherUserId]);
+
+  const sendMessage = async () => {
+    if (!messageInput.trim()) return;
+
+    const message: Message = {
+      id: Date.now().toString(), // Unique message ID (timestamp)
+      text: messageInput.trim(),
+      senderId: userId || "",
+      timestamp: Date.now(),
     };
 
-    initializeChat();
-
-    // Cleanup subscription on unmount
-    return () => {
-      if (chatId) {
-        unsubscribeFromChat(chatId);
-      }
-    };
-  }, [otherUserId]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMessage.trim() && chatId && auth.currentUser) {
-      await sendMessage(chatId, auth.currentUser.uid, newMessage.trim());
-      setNewMessage('');
+    if (userId) {
+      // Send message to both users' chat
+      await set(dbRef(database, `chats/${userId}/${otherUserId}/${message.id}`), message);
+      await set(dbRef(database, `chats/${otherUserId}/${userId}/${message.id}`), message);
     }
+
+    setMessageInput("");
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3>Chat with {otherUserName}</h3>
+    <div className="flex flex-col bg-[#EEF4C7] rounded-lg shadow-lg h-full w-96">
+      <div className="p-4 border-b border-gray-300 flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Chat with {otherUserName}</h2>
+        <button
+          onClick={() => setShowChat(false)}
+          className="text-2xl text-gray-500 hover:text-gray-700"
+        >
+          ×
+        </button>
       </div>
-      
-      <div style={styles.messagesContainer}>
-        {messages.map((msg) => (
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {messages.map((message) => (
           <div
-            key={msg.id}
-            style={{
-              ...styles.message,
-              ...(msg.senderId === auth.currentUser?.uid
-                ? styles.sentMessage
-                : styles.receivedMessage),
-            }}
+            key={message.id}
+            className={`flex ${message.senderId === userId ? 'justify-end' : 'justify-start'} mb-3`}
           >
-            <p style={styles.messageText}>{msg.message}</p>
-            <span style={styles.timestamp}>
-              {new Date(msg.timestamp).toLocaleTimeString()}
-            </span>
+            <div
+              className={`p-3 max-w-[70%] rounded-lg ${
+                message.senderId === userId
+                  ? "bg-white" // User's message with white bubble
+                  : "bg-[#B8C659] text-white" // Other user's message with green bubble
+              }`}
+            >
+              <p>{message.text}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      <form onSubmit={handleSendMessage} style={styles.form}>
+      <div className="p-4 border-t border-gray-300 flex items-center gap-3">
         <input
           type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          className="flex-1 p-2 rounded-lg border border-gray-300"
           placeholder="Type a message..."
-          style={styles.input}
         />
-        <button type="submit" style={styles.button}>
+        <button
+          onClick={sendMessage}
+          className="text-black bg-[#DBEC62] px-4 py-2 rounded hover:bg-[#F8F27D]"
+        >
           Send
         </button>
-      </form>
+      </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: '400px',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    margin: '20px 0',
-  },
-  header: {
-    padding: '10px',
-    borderBottom: '1px solid #ddd',
-    backgroundColor: '#f8f9fa',
-  },
-  messagesContainer: {
-    flex: 1,
-    overflow: 'auto',
-    padding: '10px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '10px',
-  },
-  message: {
-    maxWidth: '70%',
-    padding: '8px 12px',
-    borderRadius: '12px',
-    marginBottom: '5px',
-  },
-  sentMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#007bff',
-    color: 'white',
-  },
-  receivedMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e9ecef',
-    color: 'black',
-  },
-  messageText: {
-    margin: '0',
-    wordBreak: 'break-word' as const,
-  },
-  timestamp: {
-    fontSize: '0.75rem',
-    opacity: 0.7,
-    display: 'block',
-    marginTop: '4px',
-  },
-  form: {
-    display: 'flex',
-    padding: '10px',
-    borderTop: '1px solid #ddd',
-    gap: '10px',
-  },
-  input: {
-    flex: 1,
-    padding: '8px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-  },
-  button: {
-    padding: '8px 16px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
 };
 
 export default Chat;

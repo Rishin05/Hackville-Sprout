@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { auth, database } from "../../lib/firebase";
 import { ref as dbRef, onValue, off } from "firebase/database";
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import Chat from "../Chat/page";
+import Chat from "../Chat/page"; // Import Chat component
 
 interface User {
   id: string;
@@ -45,7 +44,7 @@ const MainPage = () => {
     onValue(usersRef, (snapshot) => {
       if (snapshot.exists() && currentUser) {
         const usersData: User[] = [];
-        
+
         snapshot.forEach((childSnapshot) => {
           const userData = childSnapshot.val();
           const userId = childSnapshot.key;
@@ -54,7 +53,7 @@ const MainPage = () => {
             // Calculate matching skills
             const matchingSkillsToTeach = (currentUser.skillsToLearn || [])
               .filter((skill: string) => userData.skills?.includes(skill));
-            
+
             const matchingSkillsToLearn = (currentUser.skills || [])
               .filter((skill: string) => userData.skillsToLearn?.includes(skill));
 
@@ -89,66 +88,40 @@ const MainPage = () => {
     };
   }, [currentUser?.skillsToLearn, currentUser?.skills]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   return (
     <div>
-      <nav style={styles.navbar}>
-        <button onClick={() => router.push("/main-page")} style={styles.navButton}>
-          Home
-        </button>
-        <button onClick={() => router.push("/about")} style={styles.navButton}>
-          About Me
-        </button>
-        <button onClick={handleLogout} style={styles.navButton}>
-          Logout
-        </button>
-      </nav>
 
-      <div style={styles.contentContainer}>
-        <div style={styles.userListContainer}>
-          <h1>Compatible Users</h1>
-          <div style={styles.userList}>
+      <div className="flex gap-8 p-6 h-[calc(100vh-60px)] bg-[#FAFAFA]">
+        <div className="flex-1 overflow-y-auto">
+          <h1 className="text-2xl font-semibold mb-4">Recommended Users We think you'd love to SKILL SWAP with:</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {users.length === 0 ? (
               <p>No compatible users found.</p>
             ) : (
               users.map((user) => (
                 <div
                   key={user.id}
-                  style={styles.userCard}
+                  className="border border-gray-300 rounded-lg p-6 bg-gray-50 shadow-lg cursor-pointer hover:scale-105 transition-transform"
                   onClick={() => {
                     setSelectedUser(user);
                     setShowChat(true);
                   }}
                 >
-                  <div style={styles.profilePictureContainer}>
+                  <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
                     {user.profilePicture ? (
-                      <img
-                        src={user.profilePicture}
-                        alt="Profile Picture"
-                        style={styles.profileImage}
-                      />
+                      <img src={user.profilePicture} alt="Profile Picture" className="w-full h-full object-cover" />
                     ) : (
-                      <div style={styles.defaultProfilePicture}>
-                        {user.name[0]}
-                      </div>
+                      <div className="text-2xl text-white">{user.name[0]}</div>
                     )}
                   </div>
-                  <h2>{user.name}</h2>
+                  <h2 className="mt-4 text-xl font-semibold">{user.name}</h2>
                   <p><strong>Program:</strong> {user.program}</p>
                   <p><strong>Skills to Teach:</strong> {user.skills.join(", ")}</p>
                   <p><strong>Skills to Learn:</strong> {user.skillsToLearn.join(", ")}</p>
                   <p><strong>Matching Skills to Teach:</strong> {user.matchingSkillsToTeach.join(", ")}</p>
                   <p><strong>Matching Skills to Learn:</strong> {user.matchingSkillsToLearn.join(", ")}</p>
                   <button 
-                    style={styles.chatButton}
+                    className="text-black bg-[#DBEC62] hover:bg-[#F8F27D] py-2 px-4 rounded-md w-full mt-4"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedUser(user);
@@ -164,136 +137,15 @@ const MainPage = () => {
         </div>
 
         {showChat && selectedUser && (
-          <div style={styles.chatContainer}>
-            <div style={styles.chatHeader}>
-              <h2>Chat with {selectedUser.name}</h2>
-              <button 
-                onClick={() => setShowChat(false)}
-                style={styles.closeButton}
-              >
-                ×
-              </button>
-            </div>
-            <Chat 
-              otherUserId={selectedUser.id}
-              otherUserName={selectedUser.name}
-            />
-          </div>
+          <Chat 
+            otherUserId={selectedUser.id}
+            otherUserName={selectedUser.name}
+            setShowChat={setShowChat} // Pass setShowChat to close the chat
+          />
         )}
       </div>
     </div>
   );
-};
-
-const styles = {
-  contentContainer: {
-    display: 'flex',
-    gap: '20px',
-    padding: '20px',
-    height: 'calc(100vh - 60px)',
-  },
-  userListContainer: {
-    flex: '1 1 auto',
-    overflowY: 'auto' as const,
-  },
-  chatContainer: {
-    flex: '0 0 400px',
-    backgroundColor: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: '100%',
-  },
-  chatHeader: {
-    padding: '10px',
-    borderBottom: '1px solid #ddd',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '24px',
-    cursor: 'pointer',
-    padding: '0 10px',
-  },
-  navbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 20px",
-    backgroundColor: "#333",
-    color: "#fff",
-  },
-  navButton: {
-    backgroundColor: "#555",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    padding: "10px 15px",
-    cursor: "pointer",
-    fontSize: "14px",
-  },
-  userList: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-    gap: "20px",
-    padding: "20px",
-  },
-  userCard: {
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    padding: "20px",
-    backgroundColor: "#f9f9f9",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-    cursor: "pointer",
-    transition: "transform 0.2s",
-    '&:hover': {
-      transform: "translateY(-2px)",
-    },
-  },
-  profilePictureContainer: {
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    overflow: "hidden",
-    marginBottom: "15px",
-    backgroundColor: "#ccc",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover" as const,
-  },
-  defaultProfilePicture: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#555",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    color: "#fff",
-    fontSize: "24px",
-    fontWeight: "bold",
-  },
-  chatButton: {
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    padding: "8px 16px",
-    marginTop: "10px",
-    cursor: "pointer",
-    width: "100%",
-    '&:hover': {
-      backgroundColor: "#0056b3",
-    },
-  },
 };
 
 export default MainPage;
