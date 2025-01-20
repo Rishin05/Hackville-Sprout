@@ -9,16 +9,16 @@ import Chat from "../Chat/page"; // Import Chat component
 interface User {
   id: string;
   name: string;
-  program: string;
-  skills: string[];
+  education: string;
+  skillsToTeach: string[];
   skillsToLearn: string[];
   matchingSkillsToTeach: string[];
   totalMatchingSkills: number;
-  profilePicture: string; 
+  profilePicture: string;
 }
 
 const categorizeUsersBySkill = (users: User[], skill: string) => {
-  return users.filter((user) => user.skills.includes(skill));
+  return users.filter((user) => user.skillsToTeach.includes(skill));
 };
 
 const MainPage = () => {
@@ -36,7 +36,7 @@ const MainPage = () => {
     }
 
     const currentUserRef = dbRef(database, `users/${auth.currentUser.uid}`);
-    onValue(currentUserRef, (snapshot) => {
+    const unsubscribeCurrentUser = onValue(currentUserRef, (snapshot) => {
       if (snapshot.exists()) {
         const userData = snapshot.val();
         setCurrentUser({ id: snapshot.key, ...userData });
@@ -50,35 +50,31 @@ const MainPage = () => {
     });
 
     const usersRef = dbRef(database, "users");
-    onValue(usersRef, (snapshot) => {
-      if (snapshot.exists() && currentUser) {
+    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
+      if (snapshot.exists()) {
         const usersData: User[] = [];
-
         snapshot.forEach((childSnapshot) => {
           const userData = childSnapshot.val();
           const userId = childSnapshot.key;
-
           if (userId !== auth.currentUser?.uid) {
-            const matchingSkillsToTeach = (currentUser.skillsToLearn || [])
-              .filter((skill: string) => userData.skills?.includes(skill));
-
+            const matchingSkillsToTeach = (currentUser?.skillsToLearn || []).filter((skill: string) =>
+              userData.skillsToTeach?.includes(skill)
+            );
             const totalMatchingSkills = matchingSkillsToTeach.length;
-
             if (totalMatchingSkills > 0) {
               usersData.push({
                 id: userId,
                 name: userData.name,
-                program: userData.program,
-                skills: userData.skills || [],
+                education: userData.education,
+                skillsToTeach: userData.skillsToTeach || [],
                 skillsToLearn: userData.skillsToLearn || [],
                 matchingSkillsToTeach,
                 totalMatchingSkills,
-                profilePicture: userData.profilePicture || "", // Set photoURL or default to empty string
+                profilePicture: userData.profilePicture || "",
               });
             }
           }
         });
-
         usersData.sort((a, b) => b.totalMatchingSkills - a.totalMatchingSkills);
         setUsers(usersData);
       }
@@ -88,7 +84,7 @@ const MainPage = () => {
       off(currentUserRef);
       off(usersRef);
     };
-  }, [currentUser?.skillsToLearn]);
+  }, [currentUser?.skillsToLearn, router]);
 
   return (
     <div className="bg-[#262D21] min-h-screen overflow-y-auto p-6">
@@ -98,11 +94,9 @@ const MainPage = () => {
 
           {categories.map((category) => {
             const categoryUsers = categorizeUsersBySkill(users, category);
-
             if (categoryUsers.length === 0) {
               return null;
             }
-
             return (
               <div key={category} className="mb-8">
                 <h2 className="text-xl font-bold mb-4 text-white">{category}</h2>
@@ -114,17 +108,17 @@ const MainPage = () => {
                     >
                       <div className="flex items-center gap-4 mb-4">
                         <img
-                          src={user.profilePicture || "/default-avatar.png"} // Default avatar if photoURL is missing
+                          src={user.profilePicture || "/default-avatar.png"}
                           alt={`${user.name}'s profile`}
                           className="w-16 h-16 rounded-full object-cover"
                         />
                         <div>
                           <h2 className="text-xl font-semibold">{user.name}</h2>
-                          <p><strong>Program:</strong> {user.program}</p>
+                          <p><strong>Program:</strong> {user.education}</p>
                         </div>
                       </div>
                       <div>
-                        <p><strong>Skills to Teach:</strong> {user.skills.join(", ")}</p>
+                        <p><strong>Skills to Teach:</strong> {user.skillsToTeach.join(", ")}</p>
                         <p><strong>Skills to Learn:</strong> {user.skillsToLearn.join(", ")}</p>
                       </div>
                       <button
@@ -145,10 +139,10 @@ const MainPage = () => {
         </div>
 
         {showChat && selectedUser && (
-          <Chat 
+          <Chat
             otherUserId={selectedUser.id}
             otherUserName={selectedUser.name}
-            setShowChat={setShowChat} // Pass setShowChat to close the chat
+            setShowChat={setShowChat}
           />
         )}
       </div>

@@ -90,7 +90,7 @@ const SkillSelection = () => {
     if (auth.currentUser) {
       const userRef = dbRef(database, `users/${auth.currentUser.uid}`);
       await update(userRef, {
-        skills: selectedSkills,
+        skillsToTeach: selectedSkills,
         updatedAt: Date.now(),
       });
 

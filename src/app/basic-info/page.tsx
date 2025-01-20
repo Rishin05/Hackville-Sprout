@@ -12,7 +12,7 @@ const BasicInfo = () => {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
-  const [program, setProgram] = useState("");
+  const [education, setProgram] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -26,7 +26,7 @@ const BasicInfo = () => {
     if (name.trim() !== "") completed++;
     if (age.trim() !== "") completed++;
     if (gender.trim() !== "") completed++;
-    if (program.trim() !== "") completed++;
+    if (education.trim() !== "") completed++;
     if (email.trim() !== "") completed++;
     if (phone.trim() !== "") completed++;
     return completed;
@@ -67,7 +67,7 @@ const BasicInfo = () => {
           name,
           age,
           gender,
-          program,
+          education,
           email,
           phone,
           profilePicture: profilePictureURL,
@@ -147,7 +147,7 @@ const BasicInfo = () => {
               <label className="text-sm font-semibold mb-2">Program:</label>
               <input
                 type="text"
-                value={program}
+                value={education}
                 onChange={(e) => setProgram(e.target.value)}
                 required
                 className="p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#F2B13E]"

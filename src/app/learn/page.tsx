@@ -20,7 +20,7 @@ const LearnSkills = () => {
         const userSnapshot = await get(userRef);
         if (userSnapshot.exists()) {
           const userData = userSnapshot.val();
-          setSkillsIAlreadyKnow(userData.skills || []);
+          setSkillsIAlreadyKnow(userData.skillsToTeach || []);
         }
       }
     } catch (error) {
@@ -37,7 +37,7 @@ const LearnSkills = () => {
       if (usersSnapshot.exists()) {
         usersSnapshot.forEach((userSnapshot) => {
           const userData = userSnapshot.val();
-          const userSkillsToTeach = userData.skills || [];
+          const userSkillsToTeach = userData.skillsToTeach || [];
           userSkillsToTeach.forEach((skill: string) => skillsOffered.add(skill));
         });
       }
