@@ -122,7 +122,7 @@ const SkillSelection = () => {
         </div>
 
         {/* Heading */}
-        <h2 className="text-2xl font-bold text-center mb-8">What's Your Talent?</h2>
+        <h2 className="text-2xl font-bold text-center mb-8">What&apos;s Your Talent?</h2>
 
         {/* Main content */}
         <div className="flex mb-8">

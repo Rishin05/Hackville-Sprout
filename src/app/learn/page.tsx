@@ -6,7 +6,6 @@ import { ref as dbRef, get, update } from "firebase/database";
 import { useRouter } from "next/navigation";
 
 const LearnSkills = () => {
-  const [skillsToLearn, setSkillsToLearn] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [skillsIAlreadyKnow, setSkillsIAlreadyKnow] = useState<string[]>([]);

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { auth, database } from "../../lib/firebase";
-import { ref as dbRef, onValue, off } from "firebase/database";
+import { ref as dbRef, onValue } from "firebase/database";
 import { useRouter } from "next/navigation";
-import Chat from "../Chat/page"; // Import Chat component
+import ChatComponent from "../Chat/ChatComponent";
 
 interface User {
   id: string;
@@ -17,13 +17,19 @@ interface User {
   profilePicture: string;
 }
 
+interface CurrentUser {
+  id: string;
+  skillsToLearn: string[];
+  [key: string]: unknown; // Updated type
+}
+
 const categorizeUsersBySkill = (users: User[], skill: string) => {
   return users.filter((user) => user.skillsToTeach.includes(skill));
 };
 
 const MainPage = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
@@ -41,7 +47,6 @@ const MainPage = () => {
         const userData = snapshot.val();
         setCurrentUser({ id: snapshot.key, ...userData });
 
-        // Extract unique categories from skillsToLearn
         const uniqueCategories: string[] = Array.from(
           new Set(userData.skillsToLearn || [])
         );
@@ -81,8 +86,8 @@ const MainPage = () => {
     });
 
     return () => {
-      off(currentUserRef);
-      off(usersRef);
+      unsubscribeCurrentUser(); // Cleanup
+      unsubscribeUsers(); // Cleanup
     };
   }, [currentUser?.skillsToLearn, router]);
 
@@ -139,7 +144,7 @@ const MainPage = () => {
         </div>
 
         {showChat && selectedUser && (
-          <Chat
+          <ChatComponent
             otherUserId={selectedUser.id}
             otherUserName={selectedUser.name}
             setShowChat={setShowChat}

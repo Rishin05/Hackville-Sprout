@@ -3,17 +3,15 @@
 import { useState, useEffect } from "react";
 import {
   auth,
-  signOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from "../lib/firebase";
 import { User } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import Footer from "./components/footer";
 
 const Home = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,10 +30,7 @@ const Home = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    router.push("/"); // Redirect to home page after sign out
-  };
+
 
   const handleSignInWithEmail = async () => {
     try {

@@ -5,8 +5,6 @@ import { auth, database, storage } from "../../lib/firebase";
 import { ref as dbRef, set } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import Navbar from "../components/navbar"; // Import the Navbar component
 
 const BasicInfo = () => {
   const [name, setName] = useState("");
